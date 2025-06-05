@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".ErrorPage1">
+
+    <TextView
+        android:id="@+id/textViewErrorMessage1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="150dp"
+        android:text="ERROR: Terdeteksi aplikasi floating berjalan. Harap tutup aplikasi tersebut."
+        android:textSize="18sp"
+        android:textAlignment="center"
+        android:textColor="@android:color/holo_red_dark"/>
+
+    <Button
+        android:id="@+id/btnExitApp1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewErrorMessage1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:text="KELUAR APLIKASI" />
+
+</RelativeLayout>

@@ -44,4 +44,7 @@
         libero vel nunc consequat, quis tincidunt nisl eleifend. Cras bibendum enim a justo luctus
         vestibulum. Fusce dictum libero quis erat maximus, vitae volutpat diam dignissim.
     </string>
+    <string name="selamat_datang">Selamat Datang!</string>
+    <string name="tekan_tombol_di_bawah_untuk_memulai_pemeriksaan_kondisi_aplikasi">Tekan tombol di bawah untuk memulai pemeriksaan kondisi aplikasi.</string>
+    <string name="cek_kondisi">CEK KONDISI</string>
 </resources>
