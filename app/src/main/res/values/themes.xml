@@ -1,0 +1,52 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.EduTest" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/material_dynamic_neutral10</item>
+        <item name="colorPrimaryVariant">@color/cardview_dark_background</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/material_dynamic_neutral10</item>
+        <item name="colorSecondaryVariant">@color/black</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+
+        <item name="alertDialogTheme">@style/CustomAlertDialogTheme</item>
+    </style>
+
+    <style name="Theme.EduTest.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.EduTest.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.EduTest.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="CustomAlertDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+    </style>
+
+    <style name="PositiveButtonStyle" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:background">@drawable/rounded_button_green</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="NegativeButtonStyle" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:textColor">@android:color/darker_gray</item>
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    <color name="teal_200">#03DAC5</color>
+    <color name="teal_700">#018786</color>
+    <color name="green_button_color">#4CAF50</color>
+    <color name="material_dynamic_neutral10">#1C1B1F</color> <color name="cardview_dark_background">#1C1B1F</color> </resources>
