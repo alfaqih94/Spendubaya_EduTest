@@ -11,7 +11,6 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
-import android.text.InputType
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.webkit.WebView
@@ -19,7 +18,6 @@ import android.webkit.WebViewClient
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.BatteryManager
 import android.os.Handler
 import android.os.Looper
@@ -31,6 +29,8 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,25 +39,23 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private var exitMediaPlayer: MediaPlayer? = null
     private var attentionMediaPlayer: MediaPlayer? = null
+    private var exitMediaPlayer: MediaPlayer? = null
     private var audioManager: AudioManager? = null
     private lateinit var batteryStatus: TextView
     private lateinit var timeStatus: TextView
-    private lateinit var buttonContainer: LinearLayout
-    private lateinit var maximizeButton: ImageButton
+    // Perubahan: statusContainer akan digunakan untuk status baterai dan waktu saja
+    private lateinit var statusContainer: LinearLayout
+    // Tambahkan variabel untuk tombol keluar agar bisa diakses
+    private lateinit var exitButton: ImageButton
+
 
     // URL WEB STATIS
-    private val STATIC_WEB_URL = "https://www.facebook.com/"
+    private val STATIC_WEB_URL = "https://sites.google.com/view/spendubaya-edutest"
 
     private var kioskModeActive = false
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
-
-    // KODE KELUAR STATIS
-
-    // VARIABEL UNTUK MENGONTROL TOAST KIOSK (DIHAPUS, karena toast dihilangkan)
-    // private var hasShownKioskModeToast = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,34 +68,39 @@ class MainActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_SECURE
         )
 
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main) // Pastikan layout utama adalah FrameLayout atau sejenisnya
 
         webView = findViewById(R.id.webview)
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
-        buttonContainer = LinearLayout(this).apply {
+
+        // Inisialisasi statusContainer untuk baterai dan waktu
+        statusContainer = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            // Ubah gravity menjadi CENTER_HORIZONTAL untuk menempatkan di tengah atas
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             setBackgroundColor(Color.TRANSPARENT)
-            setPadding(dpToPx(20f), dpToPx(25f), dpToPx(20f), dpToPx(20f)) // Gunakan dpToPx
-            visibility = LinearLayout.VISIBLE
+            // Padding sedikit dari atas dan samping agar tidak terlalu menempel
+            setPadding(dpToPx(16f), dpToPx(16f), dpToPx(16f), dpToPx(16f))
         }
+
+        // Dapatkan rootView sebagai FrameLayout untuk menambahkan view secara fleksibel
         val rootView = findViewById<FrameLayout>(android.R.id.content)
-        val layoutParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
+
+        // Tambahkan statusContainer ke rootView dengan LayoutParams yang sesuai
+        rootView.addView(statusContainer, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, // Lebar match_parent
+            FrameLayout.LayoutParams.WRAP_CONTENT // Tinggi wrap_content
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            topMargin = dpToPx(25f)
-        }
-        rootView.addView(buttonContainer, layoutParams)
+            gravity = Gravity.TOP // Tetap di bagian atas
+        })
 
-        addNavigationButtons()
+
+        // Panggil fungsi untuk menambahkan tampilan baterai dan waktu
         addBatteryAndTimeDisplay()
-        addMinimizeButton()
-        addExitButton()
-        addMaximizeButton()
 
+        // Panggil fungsi untuk menambahkan tombol keluar
+        addExitButton()
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -106,10 +109,8 @@ class MainActivity : AppCompatActivity() {
             attentionMediaPlayer = MediaPlayer.create(this, R.raw.attention_sound)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Toast.makeText(this, "Gagal memuat suara awal.", Toast.LENGTH_SHORT).show() // DIHAPUS
-            Log.e("MainActivity", "Failed to load initial sounds: ${e.message}") // Ganti dengan Log
+            Log.e("MainActivity", "Failed to load initial sounds: ${e.message}")
         }
-
         checkKioskModeStatus()
     }
 
@@ -117,6 +118,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             startLockTask()
+            playAttentionSound()
         }
         checkKioskModeStatus()
     }
@@ -150,7 +152,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun getExitCode(): String {
         val dateFormat = SimpleDateFormat("ddMMyy", Locale.getDefault())
-        return dateFormat.format(Date())}
+        return dateFormat.format(Date())
+    }
 
     private fun showExitDialog() {
         val input = EditText(this).apply {
@@ -170,79 +173,23 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(Color.WHITE)
             addView(input)
         }
-
-        val dialog = AlertDialog.Builder(this, R.style.CustomAlertDialogTheme)
-            .setTitle("Kode Keluar Ujian")
-            .setMessage("Untuk mengakhiri sesi ujian, harap masukkan kode verifikasi yang benar.")
-            .setView(input)
+        AlertDialog.Builder(this)
+            .setTitle("Konfirmasi Keluar")
+            .setMessage("Masukkan kode unik untuk keluar")
+            .setView(layout)
             .setPositiveButton("KELUAR") { _, _ ->
                 if (input.text.toString() == getExitCode()) {
                     playAttentionSound()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        stopLockTask()
-                    }
-                    finish()
+                    stopLockTask()
+                    finishAffinity()
                 } else {
-                    // Toast.makeText(this, "Kode salah! Silakan coba lagi.", Toast.LENGTH_SHORT).show() // DIHAPUS
-                    Log.w("MainActivity", "Incorrect exit code entered.") // Ganti dengan Log
-                    playAttentionSound()
+                    Toast.makeText(this, "Kode salah!", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("BATAL", null)
-            .create()
-
-        dialog.window?.decorView?.rootView?.tag = "exit_dialog_active"
-        dialog.setOnDismissListener {
-            dialog.window?.decorView?.rootView?.tag = null
-        }
-        dialog.show()
-
-        val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-        positiveButton.apply {
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            setPadding(dpToPx(16f), dpToPx(8f), dpToPx(16f), dpToPx(8f))
-            val buttonDrawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = dpToPx(8f).toFloat()
-                setColor(Color.parseColor("#4CAF50"))
-            }
-            background = buttonDrawable
-            setAllCaps(true)
-        }
-
-        val negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-        negativeButton.apply {
-            setTextColor(Color.GRAY)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            setPadding(dpToPx(16f), dpToPx(8f), dpToPx(16f), dpToPx(8f))
-            setAllCaps(true)
-        }
+            .setIcon(R.drawable.exit_icon)
+            .show()
     }
 
-    private fun playExitSound() {
-        try {
-            audioManager?.let { am ->
-                val maxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-                am.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0)
-
-                if (exitMediaPlayer != null) {
-                    if (exitMediaPlayer!!.isPlaying) {
-                        exitMediaPlayer?.seekTo(0)
-                    } else {
-                        exitMediaPlayer?.start()
-                    }
-                } else {
-                    exitMediaPlayer = MediaPlayer.create(this, R.raw.exit_sound)
-                    exitMediaPlayer?.start()
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e("MainActivity", "Error playing exit sound: ${e.message}") // Ganti dengan Log
-        }
-    }
 
     private fun playAttentionSound() {
         try {
@@ -263,40 +210,32 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("MainActivity", "Error playing attention sound: ${e.message}") // Ganti dengan Log
+            Log.e("MainActivity", "Error playing attention sound: ${e.message}")
         }
     }
 
     private fun loadStaticUrl() {
         webView.loadUrl(STATIC_WEB_URL)
-        // Toast.makeText(this, "Memuat URL: $STATIC_WEB_URL", Toast.LENGTH_SHORT).show() // DIHAPUS
-        Log.i("MainActivity", "Loading URL: $STATIC_WEB_URL") // Ganti dengan Log
+        Log.i("MainActivity", "Loading URL: $STATIC_WEB_URL")
     }
 
-    // Fungsi untuk memeriksa status Kiosk Mode
     private fun checkKioskModeStatus() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (devicePolicyManager.isDeviceOwnerApp(packageName) || devicePolicyManager.isProfileOwnerApp(packageName)) {
                 startLockTask()
                 kioskModeActive = true
-                // Toast.makeText(this, "Mode Kiosk aktif!", Toast.LENGTH_SHORT).show() // DIHAPUS
-                Log.i("MainActivity", "Kiosk Mode is active!") // Ganti dengan Log
-                // hasShownKioskModeToast = true // Tidak perlu lagi karena toast dihilangkan
+                Log.i("MainActivity", "Kiosk Mode is active!")
                 loadStaticUrl()
             } else {
                 kioskModeActive = false
-                // Toast.makeText(this, "Mode Kiosk mungkin tidak aktif otomatis. Aktifkan secara manual jika diperlukan.", Toast.LENGTH_LONG).show() // DIHAPUS
-                Log.w("MainActivity", "Kiosk Mode might not be active automatically. Enable manually if needed.") // Ganti dengan Log
-                playAttentionSound()
-                // hasShownKioskModeToast = true // Tidak perlu lagi karena toast dihilangkan
+                startLockTask()
+                Log.w("MainActivity", "Kiosk Mode might not be active automatically. Enable manually if needed.")
                 loadStaticUrl()
             }
         } else {
             kioskModeActive = false
-            // Toast.makeText(this, "Perangkat ini tidak mendukung Mode Kiosk.", Toast.LENGTH_LONG).show() // DIHAPUS
-            Log.w("MainActivity", "This device does not support Kiosk Mode.") // Ganti dengan Log
+            Log.w("MainActivity", "This device does not support Kiosk Mode.")
             playAttentionSound()
-            // hasShownKioskModeToast = true // Tidak perlu lagi karena toast dihilangkan
             loadStaticUrl()
         }
     }
@@ -305,22 +244,20 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_ADMIN) {
             if (resultCode == RESULT_OK) {
-                // Toast.makeText(this, "Admin perangkat diaktifkan. Silakan coba buka aplikasi lagi.", Toast.LENGTH_LONG).show() // DIHAPUS
-                Log.i("MainActivity", "Device admin enabled. Please try opening the app again.") // Ganti dengan Log
+                Log.i("MainActivity", "Device admin enabled. Please try opening the app again.")
                 finish()
             } else {
-                // Toast.makeText(this, "Admin perangkat tidak diaktifkan. Mode Kiosk tidak dapat diaktifkan.", Toast.LENGTH_LONG).show() // DIHAPUS
-                Log.w("MainActivity", "Device admin not enabled. Kiosk Mode cannot be activated.") // Ganti dengan Log
+                Log.w("MainActivity", "Device admin not enabled. Kiosk Mode cannot be activated.")
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        exitMediaPlayer?.release()
-        exitMediaPlayer = null
         attentionMediaPlayer?.release()
         attentionMediaPlayer = null
+        exitMediaPlayer?.release()
+        exitMediaPlayer = null
     }
 
     private fun dpToPx(dp: Float): Int {
@@ -334,37 +271,30 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val REQUEST_CODE_ENABLE_ADMIN = 1
     }
-    private fun addNavigationButtons() {
-        val buttons = listOf(Pair(R.drawable.back_icon) { webView.goBack() }, Pair(R.drawable.next_icon) { webView.goForward() }, Pair(R.drawable.refresh_icon) { webView.reload() })
-        val buttonSize = dpToPx(50f) // Ukuran tombol 50dp
-        val buttonMargin = dpToPx(25f) // Margin 10dp
-        for ((icon, action) in buttons) {
-            val button = ImageButton(this).apply {
-                setImageResource(icon)
-                setBackgroundColor(Color.TRANSPARENT)
-                setOnClickListener { action() }
-            }
-            buttonContainer.addView(button)
-        }
-    }
+
     private fun addBatteryAndTimeDisplay() {
-        val statusLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(20,20,20,20)
+        // Layout yang akan memegang ikon baterai/waktu dan teks
+        val displayLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            // Karena parent (statusContainer) sudah CENTER_HORIZONTAL, ini tidak perlu lagi gravity
+            // Jika mau ada spasi antar ikon/teks, itu diatur di margin masing-masing elemen di bawah
         }
 
         val batteryLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, dpToPx(8f), 0) // Padding kanan agar tidak terlalu dekat dengan waktu
         }
 
         val batteryIcon = ImageView(this).apply {
             setImageResource(R.drawable.battery_icon)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply { // Ukuran ikon
+                setMargins(0, 0, dpToPx(4f), 0) // Margin kanan ikon
+            }
         }
         batteryStatus = TextView(this).apply {
             setTextColor(Color.DKGRAY)
-            textSize = 14f
+            textSize = 16f // Ukuran teks lebih kecil
         }
 
         val timeLayout = LinearLayout(this).apply {
@@ -374,10 +304,13 @@ class MainActivity : AppCompatActivity() {
 
         val timeIcon = ImageView(this).apply {
             setImageResource(R.drawable.clock_icon)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply { // Ukuran ikon
+                setMargins(0, 0, dpToPx(4f), 0) // Margin kanan ikon
+            }
         }
         timeStatus = TextView(this).apply {
             setTextColor(Color.DKGRAY)
-            textSize = 14f
+            textSize = 16f // Ukuran teks lebih kecil
         }
 
         batteryLayout.addView(batteryIcon)
@@ -385,11 +318,13 @@ class MainActivity : AppCompatActivity() {
         timeLayout.addView(timeIcon)
         timeLayout.addView(timeStatus)
 
-        statusLayout.addView(batteryLayout)
-        statusLayout.addView(timeLayout)
-        buttonContainer.addView(statusLayout)
+        displayLayout.addView(batteryLayout)
+        displayLayout.addView(timeLayout)
+
+        statusContainer.addView(displayLayout) // Tambahkan displayLayout ke statusContainer
         updateBatteryAndTime()
     }
+
     @SuppressLint("SetTextI18n")
     private fun updateBatteryAndTime() {
         val batteryIntent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
@@ -399,54 +334,28 @@ class MainActivity : AppCompatActivity() {
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         timeStatus.text = timeFormat.format(Date())
 
+        // Update setiap 1 menit (60000 ms)
         Handler(Looper.getMainLooper()).postDelayed({ updateBatteryAndTime() }, 60000)
     }
 
-    private fun addMinimizeButton() {
-        val buttonSize = dpToPx(50f) // Ukuran tombol 50dp
-        val buttonMargin = dpToPx(10f) // Margin 10dp
-
-        val minimizeButton = ImageButton(this).apply {
-            setImageResource(R.drawable.minimize_icon)
-            setBackgroundColor(Color.TRANSPARENT)
-            setOnClickListener {
-                buttonContainer.visibility = LinearLayout.GONE
-                maximizeButton.visibility = ImageButton.VISIBLE
-            }
-        }
-        buttonContainer.addView(minimizeButton)
-    }
-
     private fun addExitButton() {
-        val exitButton = ImageButton(this).apply {
+        val rootView = findViewById<FrameLayout>(android.R.id.content)
+
+        exitButton = ImageButton(this).apply {
             setImageResource(R.drawable.exit_icon)
+            // Add this line to tint the icon
+            setColorFilter(ContextCompat.getColor(this@MainActivity, android.R.color.holo_red_dark), android.graphics.PorterDuff.Mode.SRC_IN)
             setBackgroundColor(Color.TRANSPARENT)
             setOnClickListener { showExitDialog() }
-        }
-        buttonContainer.addView(exitButton)
-    }
+            scaleType = ImageView.ScaleType.FIT_CENTER
 
-    private fun addMaximizeButton() {
-        val buttonSize = dpToPx(50f) // Ukuran tombol 50dp
-        val buttonMargin = dpToPx(10f) // Margin 10dp
+            val iconSize = dpToPx(72f)
 
-        maximizeButton = ImageButton(this).apply {
-            setImageResource(R.drawable.maximize_icon)
-            setBackgroundColor(Color.TRANSPARENT)
-            visibility = ImageButton.GONE
-            setOnClickListener {
-                buttonContainer.visibility = LinearLayout.VISIBLE
-                buttonContainer.setBackgroundColor(Color.TRANSPARENT) // Ubah agar transparan, bukan buram
-                this.visibility = ImageButton.GONE
+            layoutParams = FrameLayout.LayoutParams(iconSize, iconSize).apply {
+                gravity = Gravity.BOTTOM or Gravity.END
+                setMargins(0, 0, dpToPx(16f), dpToPx(16f))
             }
-
         }
-        val layoutParams = FrameLayout.LayoutParams(120, 120).apply {
-            gravity = Gravity.TOP or Gravity.END
-            marginEnd = 40
-            topMargin = 40
-        }
-        val rootView = findViewById<FrameLayout>(android.R.id.content)
-        rootView.addView(maximizeButton, layoutParams)
+        rootView.addView(exitButton)
     }
 }
