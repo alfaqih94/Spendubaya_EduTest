@@ -33,7 +33,7 @@ class LoginPage : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login_page)
 
-        val btnCheck: Button = findViewById(R.id.loginButton) // Mengganti ID tombol
+        val btnCheck: Button = findViewById(R.id.CekButton) // Mengganti ID tombol
         btnCheck.setOnClickListener {
             performChecks()
         }
@@ -60,7 +60,7 @@ class LoginPage : AppCompatActivity() {
 
         // Jika semua aman, lanjutkan ke MainActivity
         Toast.makeText(this, "Semua kondisi aman! Melanjutkan ke aplikasi.", Toast.LENGTH_SHORT).show()
-        startActivity(Intent(this, MainActivity::class.java))
+        startActivity(Intent(this, LoginActivity::class.java))
         finish() // Selesai LoginPage setelah ke MainActivity
     }
 

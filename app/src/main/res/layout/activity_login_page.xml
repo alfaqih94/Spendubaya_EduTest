@@ -3,19 +3,38 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center">
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/logo_edutest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:src="@drawable/logo_baru"
+        />
 
     <Button
-        android:id="@+id/loginButton"
+        android:id="@+id/CekButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/button_login"
         android:elevation="10dp"
         android:padding="0dp"
-        android:text="MASUK UJIAN"
+        android:text="MASUK"
         android:textColor="@android:color/holo_orange_dark"
         android:textSize="18sp"
-        android:layout_marginTop="140dp"
+        android:layout_marginTop="100dp"
         />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="Versi 1.1 - Beta"
+        android:textColor="@color/black"
+        android:textAllCaps="true"
+        android:textColorHint="@color/purple_700"
+        />
+
 
 </LinearLayout>

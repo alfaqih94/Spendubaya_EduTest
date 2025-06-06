@@ -1,0 +1,48 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".LoginActivity">
+
+
+
+    <ImageView
+        android:id="@+id/logoImageView"
+        android:layout_width="400dp"
+        android:layout_height="400dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:src="@drawable/logo_baru" />
+
+    <EditText
+        android:id="@+id/tokenEditText"
+        android:layout_width="350dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/logoImageView"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/rounded_edittext_background"
+        android:gravity="center_horizontal"
+        android:hint="Masukkan Token"
+        android:textColorHint="@android:color/holo_orange_dark"
+        android:inputType="number"
+        android:minHeight="60dp"
+        android:layout_centerHorizontal="true"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="25dp"
+        android:textStyle="bold"/>
+
+    <Button
+        android:id="@+id/loginButton"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tokenEditText"
+        android:layout_marginTop="10dp"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textSize="25dp"
+        android:background="@color/white"
+        android:text="MASUK"
+        android:layout_centerHorizontal="true"/>
+
+</RelativeLayout>
