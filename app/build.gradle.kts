@@ -11,8 +11,8 @@ android {
         applicationId = "com.spendubaya.edutest"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "1.5 - STABLE"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -42,6 +42,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
