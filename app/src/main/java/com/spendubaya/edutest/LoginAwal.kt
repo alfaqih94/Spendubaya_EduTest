@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.appcompat.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -16,10 +17,23 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.net.HttpURLConnection
+import kotlinx.coroutines.withContext
+import java.net.URL
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import androidx.core.net.toUri // Import untuk extension function toUri()
 
 class LoginAwal : AppCompatActivity() {
 
     private val requestBluetoothPermission = 1
+    // URL API Google Sheet untuk pengecekan nilai update dan link download
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbz5T0rykfPcSlVIIdVtgHPqEtXmYDim0YoUpWU4383PizOuaUc7fWKDMtWVpWkVI2F_Cw/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
+
     private val floatingApps = listOf(
         "com.applay.overlay",
         "com.mercandalli.android.apps.bubble",
@@ -32,6 +46,7 @@ class LoginAwal : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login_awal)
+
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
         )
@@ -40,19 +55,32 @@ class LoginAwal : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_SECURE
         )
 
-        val btnCheck: Button = findViewById(R.id.tombol_cek) // Mengganti ID tombol
+        val btnCheck: Button = findViewById(R.id.tombol_cek)
         btnCheck.setOnClickListener {
-            performChecks()
+            lifecycleScope.launch {
+                performChecks()
+            }
         }
     }
 
-    private fun performChecks() {
+    private suspend fun performChecks() {
+        // Cek pembaruan aplikasi terlebih dahulu dan dapatkan link download
+        val (updateNeeded, downloadLink) = withContext(Dispatchers.IO) {
+            checkAppUpdate() // Panggil fungsi yang sekarang mengembalikan Pair
+        }
+
+        if (updateNeeded) {
+            // Tampilkan dialog pembaruan dengan link yang didapat dari API
+            showUpdateDialog(downloadLink)
+            return
+        }
+
+        // Jika tidak ada pembaruan, lanjutkan dengan pemeriksaan lainnya
         if (!isNetworkConnected()) {
             startActivity(Intent(this, Error2InternetConn::class.java))
             return
         }
 
-        // 1. Periksa  Bluetooth
         if (checkBluetoothStatus()) {
             startActivity(Intent(this, Error1Bluetooth::class.java))
             return
@@ -63,35 +91,92 @@ class LoginAwal : AppCompatActivity() {
             return
         }
 
-        // 2. Periksa aplikasi floating
-
-
-        // 3. Periksa koneksi internet
-
-
-        // Jika semua aman, lanjutkan ke MainActivity
         Toast.makeText(this, "Semua kondisi aman! Melanjutkan ke aplikasi.", Toast.LENGTH_SHORT)
             .show()
         startActivity(Intent(this, HomeLogin::class.java))
-        finish() // Selesai LoginPage setelah ke MainActivity
+        finish()
+    }
+
+    /**
+     * Fungsi untuk memeriksa status pembaruan aplikasi dan mendapatkan link download dari API Google Sheet.
+     * Mengembalikan Pair<Boolean, String?>:
+     * - Boolean: true jika pembaruan diperlukan (nilai = 1), false jika tidak.
+     * - String?: Link download, null jika tidak ada update atau terjadi error.
+     */
+    private suspend fun checkAppUpdate(): Pair<Boolean, String?> {
+        var connection: HttpURLConnection? = null
+        var reader: BufferedReader? = null
+        return try {
+            val url = URL(googleSheetAPI)
+            connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connect()
+
+            val stream = connection.inputStream
+            reader = BufferedReader(InputStreamReader(stream))
+            val buffer = StringBuffer()
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                buffer.append(line + "\n")
+            }
+
+            val jsonResponse = buffer.toString()
+            val jsonObject = JSONObject(jsonResponse)
+            val nilai = jsonObject.getInt("nilai")
+            // Ambil link download dari JSON, defaultnya null jika tidak ada atau error
+            val downloadLink = jsonObject.optString("download_link", null)
+
+            when (nilai) {
+                0 -> Pair(false, null) // Tidak ada pembaruan
+                1 -> Pair(true, downloadLink) // Ada pembaruan, sertakan link
+                else -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@LoginAwal, "Respons API tidak valid", Toast.LENGTH_SHORT).show()
+                    }
+                    Pair(false, null) // Anggap tidak ada pembaruan jika respons tidak sesuai
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@LoginAwal, "Error koneksi ke server: ${e.message}", Toast.LENGTH_LONG).show()
+                e.printStackTrace()
+            }
+            Pair(false, null) // Anggap tidak ada pembaruan jika terjadi error
+        } finally {
+            connection?.disconnect()
+            try {
+                reader?.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Menampilkan dialog untuk memberitahu pengguna bahwa pembaruan tersedia.
+     * Menerima link download sebagai parameter.
+     */
+    private fun showUpdateDialog(downloadLink: String?) {
+        AlertDialog.Builder(this)
+            .setTitle("Pembaruan Aplikasi Tersedia")
+            .setMessage("Versi terbaru aplikasi tersedia. Harap perbarui untuk melanjutkan.")
+            .setPositiveButton("OK") { dialog, _ ->
+                if (!downloadLink.isNullOrEmpty()) {
+                    val browserIntent = Intent(Intent.ACTION_VIEW, downloadLink.toUri())
+                    startActivity(browserIntent)
+                } else {
+                    Toast.makeText(this, "Link download tidak tersedia. Harap hubungi admin.", Toast.LENGTH_LONG).show()
+                }
+                dialog.dismiss()
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     private fun isFloatingAppRunning(): Boolean {
         val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-
-        // Penjelasan penting tentang API level dan QUERY_ALL_PACKAGES ada di AndroidManifest.xml
-        // dan komentar di Activity1.kt sebelumnya.
-        // Di Android 10 (API 29) ke atas, getRunningAppProcesses()
-        // hanya mengembalikan aplikasi Anda sendiri dan beberapa proses sistem.
-        // Anda tidak bisa lagi secara langsung melihat proses aplikasi lain untuk tujuan keamanan/privasi.
-        // Untuk deteksi "floating apps" yang lebih reliable di API tinggi,
-        // Anda perlu mempertimbangkan pendekatan yang berbeda (misalnya, memeriksa izin SYSTEM_ALERT_WINDOW
-        // atau AccessibilityService jika relevan).
-
-        // Untuk tujuan demonstrasi ini, kita akan melakukan simulasi atau
-        // menggunakan metode yang mungkin tidak 100% akurat di API tinggi.
-        // Metode ini lebih relevan untuk API < 29.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) { // For API < 29
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             val runningAppProcesses = manager.runningAppProcesses
             runningAppProcesses?.forEach { processInfo ->
                 if (floatingApps.contains(processInfo.processName)) {
@@ -99,27 +184,19 @@ class LoginAwal : AppCompatActivity() {
                 }
             }
         }
-        // Di API 29+, kita tidak bisa lagi mengandalkan getRunningAppProcesses() untuk ini.
-        // Anda mungkin perlu implementasi lain atau menganggapnya "aman" jika Anda tidak
-        // memiliki cara untuk memeriksanya secara andal.
         return false
     }
 
     private fun checkBluetoothStatus(): Boolean {
-        // ----- PERUBAHAN DI SINI UNTUK MENGHINDARI DEPRECATED -----
         val bluetoothManager: BluetoothManager? =
             getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
         val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
-        // --------------------------------------------------------
-
         if (bluetoothAdapter == null) {
-            // Perangkat tidak mendukung Bluetooth
             Toast.makeText(this, "Perangkat ini tidak mendukung Bluetooth.", Toast.LENGTH_LONG)
                 .show()
-            return false // Anggap sebagai tidak ada masalah Bluetooth jika tidak didukung
+            return false
         }
 
-        // Meminta izin BLUETOOTH_CONNECT jika API level 31+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -131,9 +208,9 @@ class LoginAwal : AppCompatActivity() {
                     arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
                     requestBluetoothPermission
                 )
-                return false // Akan diperiksa lagi setelah permission diberikan
+                return false
             }
-        } else { // Untuk API < 31, cukup BLUETOOTH
+        } else {
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.BLUETOOTH
@@ -144,11 +221,10 @@ class LoginAwal : AppCompatActivity() {
                     arrayOf(Manifest.permission.BLUETOOTH),
                     requestBluetoothPermission
                 )
-                return false // Akan diperiksa lagi setelah permission diberikan
+                return false
             }
         }
-
-        return bluetoothAdapter.isEnabled // Cek status isEnabled setelah mendapatkan adapter
+        return bluetoothAdapter.isEnabled
     }
 
     private fun isNetworkConnected(): Boolean {
@@ -175,8 +251,9 @@ class LoginAwal : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == requestBluetoothPermission) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission Bluetooth diberikan, coba lagi pemeriksaan
-                performChecks()
+                lifecycleScope.launch {
+                    performChecks()
+                }
             } else {
                 Toast.makeText(
                     this,
