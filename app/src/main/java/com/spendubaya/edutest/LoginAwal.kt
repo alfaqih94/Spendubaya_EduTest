@@ -157,7 +157,9 @@ class LoginAwal : AppCompatActivity() {
      * Menerima link download sebagai parameter.
      */
     private fun showUpdateDialog(downloadLink: String?) {
-        AlertDialog.Builder(this)
+        // Menggunakan konstruktor AlertDialog.Builder(context, themeResId)
+        // R.style.AlertDialogCustomTheme adalah gaya yang Anda definisikan di themes.xml
+        AlertDialog.Builder(this, R.style.AlertDialogCustomTheme)
             .setTitle("Pembaruan Aplikasi Tersedia")
             .setMessage("Versi terbaru aplikasi tersedia. Harap perbarui untuk melanjutkan.")
             .setPositiveButton("OK") { dialog, _ ->
