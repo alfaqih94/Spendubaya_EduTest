@@ -1,36 +1,45 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/Putih"
+    android:background="@drawable/background_gradient"
     >
 
     <ImageView
+        android:id="@+id/gmbar_1"
         android:layout_width="250dp"
         android:layout_height="250dp"
         android:src="@drawable/ikon_aplikasi"
         android:layout_marginTop="20dp"
         android:layout_gravity="center"
+        android:layout_centerHorizontal="true"
         />
     <ImageView
+        android:id="@+id/gmbar_2"
         android:layout_width="100dp"
         android:layout_height="100dp"
+        android:layout_below="@id/gmbar_1"
         android:src="@drawable/ikon_koneksi"
         android:layout_marginTop="60dp"
         android:layout_gravity="center"
+        android:layout_centerHorizontal="true"
 
         />
 
     <TextView
+        android:id="@+id/txt_1"
         android:layout_width="350dp"
         android:layout_height="wrap_content"
+        android:layout_below="@id/gmbar_2"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
         android:gravity="center"
+        android:layout_centerHorizontal="true"
         android:text="@string/Error_internet"
         android:textColor="@color/Merah"
+        android:fontFamily="@font/wdxll"
         android:textSize="15sp"
         android:textStyle="bold"
         android:visibility="visible" />
@@ -38,12 +47,41 @@
         android:id="@+id/tombol_keluar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/txt_1"
         android:text="@string/Exit_Text"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
         android:background="@drawable/tombol_keluar"
-        android:textSize="20sp"
+        android:textSize="30sp"
         android:textStyle="bold"
+        android:fontFamily="@font/cherrybomb"
+        />
+    <TextView
+        android:id="@+id/txt_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/txt_3"
+        android:layout_marginTop="5dp"
+        android:layout_centerHorizontal="true"
+        android:text="@string/version"
+        android:textSize="10sp"
+        android:textAllCaps="true"
+        android:fontFamily="@font/adlam"
+        android:textColor="@color/Merah"
+        />
+    <TextView
+        android:id="@+id/txt_3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tombol_keluar"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:textStyle="bold"
+        android:textColor="@color/Merah"
+        android:textSize="15sp"
+        android:fontFamily="@font/adlam"
+        android:text="@string/dev"
         />
 
-</LinearLayout>
+</RelativeLayout>

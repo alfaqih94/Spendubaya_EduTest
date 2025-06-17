@@ -30,6 +30,7 @@
         android:textColor="@android:color/holo_orange_dark"
         android:textColorHint="@android:color/holo_orange_dark"
         android:textSize="25sp"
+        android:fontFamily="@font/adlam"
         android:textStyle="bold"
         />
 
@@ -42,8 +43,35 @@
         android:layout_marginTop="10dp"
         android:background="@drawable/tombol_masuk"
         android:text="@string/Login_text"
+        android:fontFamily="@font/cherrybomb"
         android:textColor="@android:color/white"
-        android:textSize="30sp"
-        android:textStyle="bold"/>
-
+        android:textSize="40sp"
+        android:textStyle="bold"
+        />
+    <TextView
+        android:id="@+id/txt_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/txt_2"
+        android:layout_marginTop="5dp"
+        android:layout_centerHorizontal="true"
+        android:text="@string/version"
+        android:textSize="10sp"
+        android:textAllCaps="true"
+        android:fontFamily="@font/adlam"
+        android:textColor="@color/Orange"
+        />
+    <TextView
+        android:id="@+id/txt_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tombol_masuk_token"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:textStyle="bold"
+        android:fontFamily="@font/adlam"
+        android:textColor="@color/Orange"
+        android:textSize="15sp"
+        android:text="@string/dev"
+        />
 </RelativeLayout>
