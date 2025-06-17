@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Spendubaya EduTest</string>
+    <string name="version">Versi 1.4 - Stable</string>
+    <string name="Login_text">MASUK</string>
+    <string name="masukkan_token">Masukkan Token</string>
+    <string name="error_bluetooth">Aplikasi mendeteksi koneksi Bluetooth AKTIF. Silahkan nonaktifkan Bluetooth!</string>
+    <string name="Error_internet">Aplikasi mendeteksi tidak adanya koneksi INTERNET. Silahkan aktifkan Internet Mobile atau WiFi anda.</string>
+    <string name="error_floatings">Aplikasi mendeteksi adanya aplikasi floating yang aktif.
+        Silahkan uninstall atau nonaktifkan terlebih dahulu</string>
+    <string name="Exit_Text">Keluar</string>
+</resources>

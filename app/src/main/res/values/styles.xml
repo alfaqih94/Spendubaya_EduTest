@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SpendubayaEduTest" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/Orange</item>
+        <item name="colorPrimaryDark">@color/Ungu</item>
+        <item name="colorAccent">@color/Putih</item>
+        <item name="colorContainer">@color/Hitam</item>
+        <item name="colorBackgroundFloating">@color/Merah</item>
+    </style>
+</resources>

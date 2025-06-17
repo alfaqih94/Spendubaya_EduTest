@@ -1,0 +1,49 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background_gradient"
+    android:padding="16dp"
+    tools:context=".HomeLogin">
+
+    <ImageView
+        android:id="@+id/logoImageView"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:src="@drawable/ikon_aplikasi" />
+
+    <EditText
+        android:id="@+id/token_input"
+        android:layout_width="350dp"
+        android:layout_height="60dp"
+        android:layout_below="@id/logoImageView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:autofillHints="password"
+        android:background="@drawable/background_kode"
+        android:gravity="center"
+        android:hint="@string/masukkan_token"
+        android:inputType="numberPassword"
+        android:minHeight="60dp"
+        android:textColor="@android:color/holo_orange_dark"
+        android:textColorHint="@android:color/holo_orange_dark"
+        android:textSize="25sp"
+        android:textStyle="bold"
+        />
+
+    <Button
+        android:id="@+id/tombol_masuk_token"
+        android:layout_width="250dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/token_input"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/tombol_masuk"
+        android:text="@string/Login_text"
+        android:textColor="@android:color/white"
+        android:textSize="30sp"
+        android:textStyle="bold"/>
+
+</RelativeLayout>
