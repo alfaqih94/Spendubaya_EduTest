@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:layout_gravity="center"
+    android:background="@drawable/background_gradient"
+    >
+
+    <!-- Logo/Icon -->
+    <ImageView
+        android:id="@+id/logo_error_image"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ikon_aplikasi"
+        android:contentDescription="@string/error_icon"
+        android:layout_marginTop="60dp"
+        />
+
+    <!-- Information Text -->
+    <TextView
+        android:id="@+id/info_error_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/pesan_error_urlload"
+        android:textColor="@color/Merah"
+        android:textSize="18sp"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center"
+        android:fontFamily="@font/cherrybomb"
+        android:gravity="center"
+        android:padding="15dp"
+        />
+
+    <!-- Exit Button -->
+    <Button
+        android:id="@+id/exit_error_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/keluar_aplikasi"
+        android:textColor="@android:color/white"
+        android:background="@drawable/tombol_masuk"
+        android:layout_marginTop="10dp"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:fontFamily="@font/cherrybomb"
+        />
+
+</LinearLayout>

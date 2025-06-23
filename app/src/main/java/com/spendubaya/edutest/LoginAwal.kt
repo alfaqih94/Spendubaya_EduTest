@@ -6,11 +6,14 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.appcompat.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.Toast
@@ -32,7 +35,9 @@ class LoginAwal : AppCompatActivity() {
 
     private val requestBluetoothPermission = 1
     // URL API Google Sheet untuk pengecekan nilai update dan link download
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbz5T0rykfPcSlVIIdVtgHPqEtXmYDim0YoUpWU4383PizOuaUc7fWKDMtWVpWkVI2F_Cw/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbxBU_xxoZhmx7BthuFQigHVLgaVKrgsyz6YClrwDYYY9Q1VlQSZFLQQWqsHJaVqkxhQOg/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
+    private var pingMediaPlayer: MediaPlayer? = null
+    private var audioManager: AudioManager? = null
 
     private val floatingApps = listOf(
         "com.applay.overlay",
@@ -46,6 +51,15 @@ class LoginAwal : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.login_awal)
+
+        audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        try {
+            pingMediaPlayer = MediaPlayer.create(this, R.raw.ping) // Asumsi ada ping.wav di res/raw
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("LoginAwal", "Error loading ping sound: ${e.message}")
+            Toast.makeText(this, "Error loading ping sound.", Toast.LENGTH_LONG).show()
+        }
 
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -63,6 +77,33 @@ class LoginAwal : AppCompatActivity() {
         }
     }
 
+    /**
+     * Memutar suara 'ping'
+     */
+    private fun playPingSound() {
+        try {
+            audioManager?.let { am ->
+                val maxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0) // Atur volume maksimal
+
+                if (pingMediaPlayer != null) {
+                    if (pingMediaPlayer!!.isPlaying) {
+                        pingMediaPlayer?.seekTo(0) // Mulai ulang jika sedang diputar
+                    } else {
+                        pingMediaPlayer?.start() // Mulai putar
+                    }
+                } else {
+                    // Buat ulang jika null (misalnya, setelah dilepaskan di onDestroy)
+                    pingMediaPlayer = MediaPlayer.create(this, R.raw.ping)
+                    pingMediaPlayer?.start()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Log.e("LoginAwal", "Error playing ping sound: ${e.message}")
+        }
+    }
+
     private suspend fun performChecks() {
         // Cek pembaruan aplikasi terlebih dahulu dan dapatkan link download
         val (updateNeeded, downloadLink) = withContext(Dispatchers.IO) {
@@ -70,6 +111,7 @@ class LoginAwal : AppCompatActivity() {
         }
 
         if (updateNeeded) {
+            playPingSound()
             // Tampilkan dialog pembaruan dengan link yang didapat dari API
             showUpdateDialog(downloadLink)
             return
@@ -156,6 +198,14 @@ class LoginAwal : AppCompatActivity() {
      * Menampilkan dialog untuk memberitahu pengguna bahwa pembaruan tersedia.
      * Menerima link download sebagai parameter.
      */
+    override fun onDestroy() {
+        super.onDestroy()
+        // Melepaskan MediaPlayer saat aktivitas dihancurkan
+        pingMediaPlayer?.release()
+        pingMediaPlayer = null
+        Log.d("LoginAwal", "onDestroy: Ping media player released.")
+    }
+
     private fun showUpdateDialog(downloadLink: String?) {
         // Menggunakan konstruktor AlertDialog.Builder(context, themeResId)
         // R.style.AlertDialogCustomTheme adalah gaya yang Anda definisikan di themes.xml

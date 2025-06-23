@@ -5,24 +5,25 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.Resources
+import android.graphics.Color
+import android.graphics.Typeface
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.KeyEvent
-import android.view.WindowManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.EditText
-import androidx.appcompat.app.AppCompatActivity
-import android.graphics.Color
-import android.graphics.Typeface
+import android.text.InputType
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
+import android.view.View
+import android.view.WindowManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -30,12 +31,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.text.InputType // Import for InputType
-import androidx.core.content.res.ResourcesCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,14 +46,18 @@ class MainActivity : AppCompatActivity() {
     private var audioManager: AudioManager? = null
     private lateinit var batteryStatus: TextView
     private lateinit var timeStatus: TextView
-    private lateinit var statusContainer: LinearLayout // Container for battery and time
-    private lateinit var exitButton: ImageButton // Exit button instance
+    private lateinit var statusContainer: LinearLayout
+    private lateinit var exitButton: ImageButton
 
-    // STATIC WEB URL
-    private val staticWebURL = "https://sites.google.com/view/spendubaya-edutest"
+    // Variabel untuk menyimpan URL dinamis yang diterima dari HomeLogin
+    private var dynamicExamURL: String? = null
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
+
+    // Layout untuk menampilkan pesan error/info saat web tidak dimuat
+    private lateinit var errorLayout: LinearLayout
+    private lateinit var exitErrorButton: Button // Referensi tombol keluar dari layout error XML
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +83,14 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webview)
         webView.settings.javaScriptEnabled = true // Aktifkan JavaScript untuk konten web
         webView.webViewClient = WebViewClient() // Tangani semua URL di dalam WebView ini
+
+        // Dapatkan URL dinamis dari Intent
+        dynamicExamURL = intent.getStringExtra("EXAM_URL")
+        if (dynamicExamURL != null) {
+            Log.i("MainActivity", "Menerima URL dinamis: $dynamicExamURL")
+        } else {
+            Log.w("MainActivity", "Tidak ada URL dinamis yang diterima. WebView mungkin kosong.")
+        }
 
         // Dapatkan root view dari aktivitas untuk menambahkan view dinamis di atas
         val rootView = findViewById<FrameLayout>(android.R.id.content)
@@ -156,6 +169,20 @@ class MainActivity : AppCompatActivity() {
         // Panggil fungsi untuk menambahkan tampilan baterai dan waktu ke statusContainer
         addBatteryAndTimeDisplay()
 
+        // --- Inisialisasi Layout Error dari XML ---
+        // Inflate the error_urlload.xml layout
+        errorLayout = layoutInflater.inflate(R.layout.error_urlload, rootView, false) as LinearLayout
+        rootView.addView(errorLayout) // Tambahkan errorLayout ke root view
+        errorLayout.visibility = View.GONE // Sembunyikan secara default
+
+        // Dapatkan referensi tombol keluar dari layout error yang baru di-inflate
+        exitErrorButton = errorLayout.findViewById(R.id.exit_error_button)
+        exitErrorButton.setOnClickListener {
+            stopLockTask()
+            finishAffinity()// Panggil dialog keluar yang sudah ada
+        }
+        // --- Akhir Perubahan ---
+
         // Inisialisasi AudioManager untuk kontrol volume
         audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
@@ -165,7 +192,7 @@ class MainActivity : AppCompatActivity() {
             attentionMediaPlayer = MediaPlayer.create(this, R.raw.alarm)
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("MainActivity", "Gagal memuat suara awal: ${e.message}")
+            Log.e("MainActivity", "Error playing initial sounds: ${e.message}")
         }
 
         // Siapkan OnBackPressedCallback untuk penanganan navigasi kembali modern
@@ -336,28 +363,38 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("MainActivity", "Kesalahan saat memutar suara perhatian: ${e.message}")
+            Log.e("MainActivity", "Error playing attention sound: ${e.message}")
         }
     }
 
-    // Memuat URL statis ke dalam WebView
-    private fun loadStaticUrl() {
-        webView.loadUrl(staticWebURL)
-        Log.i("MainActivity", "Memuat URL: $staticWebURL")
+    // Memuat URL ke dalam WebView (hanya menggunakan URL dinamis) atau menampilkan error layout
+    private fun loadWebViewUrl() {
+        if (dynamicExamURL != null && dynamicExamURL!!.isNotEmpty()) {
+            webView.visibility = View.VISIBLE // Tampilkan WebView
+            errorLayout.visibility = View.GONE // Sembunyikan layout error
+            webView.loadUrl(dynamicExamURL!!)
+            Log.i("MainActivity", "Loading URL: $dynamicExamURL")
+        } else {
+            webView.visibility = View.GONE // Sembunyikan WebView
+            errorLayout.visibility = View.VISIBLE // Tampilkan layout error
+            // Memuat about:blank di WebView untuk memastikan tidak ada konten lama yang terlihat
+            webView.loadUrl("about:blank")
+            Log.w("MainActivity", "No dynamic URL found to load. Displaying error layout.")
+        }
     }
 
     // Memeriksa dan mengaktifkan Kiosk Mode jika kondisi terpenuhi
     private fun checkKioskModeStatus() {
         if (devicePolicyManager.isDeviceOwnerApp(packageName) || devicePolicyManager.isProfileOwnerApp(packageName)) {
             startLockTask() // Mulai mode Lock Task
-            Log.i("MainActivity", "Kiosk Mode aktif!")
-            loadStaticUrl() // Muat URL setelah Kiosk Mode dikonfirmasi/dimulai
+            Log.i("MainActivity", "Kiosk Mode is active!")
+            loadWebViewUrl() // Muat URL setelah Kiosk Mode dikonfirmasi/dimulai
         } else {
             // Jika bukan pemilik perangkat/profil, Kiosk Mode mungkin tidak aktif secara otomatis
             // Tetap coba memulai Lock Task tetapi log peringatan.
             startLockTask()
-            Log.w("MainActivity", "Kiosk Mode mungkin tidak aktif secara otomatis. Aktifkan secara manual jika diperlukan.")
-            loadStaticUrl()
+            Log.w("MainActivity", "Kiosk Mode may not be active automatically. Enable manually if needed.")
+            loadWebViewUrl()
         }
     }
 
@@ -366,10 +403,10 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_ENABLE_ADMIN) {
             if (resultCode == RESULT_OK) {
-                Log.i("MainActivity", "Admin perangkat diaktifkan. Silakan coba buka aplikasi lagi.")
+                Log.i("MainActivity", "Device admin enabled. Please try opening the app again.")
                 finish() // Selesaikan untuk memulai ulang aplikasi dan menerapkan perubahan
             } else {
-                Log.w("MainActivity", "Admin perangkat tidak diaktifkan. Kiosk Mode tidak dapat diaktifkan.")
+                Log.w("MainActivity", "Device admin not enabled. Kiosk Mode cannot be activated.")
             }
         }
     }

@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Spendubaya EduTest</string>
-    <string name="version">Versi 1.7 - Stable</string>
+    <string name="version">Versi 1.8 - Stable</string>
     <string name="Login_text">MASUK</string>
     <string name="masukkan_token">Masukkan Token</string>
     <string name="error_bluetooth">Aplikasi mendeteksi koneksi Bluetooth AKTIF. Silahkan nonaktifkan Bluetooth!</string>
@@ -9,4 +9,7 @@
         Silahkan uninstall atau nonaktifkan terlebih dahulu</string>
     <string name="Exit_Text">Keluar</string>
     <string name="dev">UPTD SMP NEGERI 2 AROSBAYA</string>
+    <string name="error_icon">Error Icon</string>
+    <string name="pesan_error_urlload">Maaf, konten ujian tidak dapat dimuat. Pastikan token Anda benar atau hubungi administrator.</string>
+    <string name="keluar_aplikasi">Keluar Aplikasi</string>
 </resources>
