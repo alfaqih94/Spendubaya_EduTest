@@ -23,12 +23,12 @@ class HomeLogin : AppCompatActivity() {
     private lateinit var tokenEditText: EditText
     private lateinit var loginButton: Button
 
+    private var pingMediaPlayer: MediaPlayer? = null
+
     // Ganti dengan URL Web App Apps Script Anda
     // Asumsi: Apps Script ini akan mengembalikan JSON Array of Objects,
     // di mana setiap objek memiliki "token" dan "url".
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbzPE8iOQyMdyN6vFodZA54OZDgDI6QBDlAapzmjvXD5ofztUinTu7QVt1WeZmQUMXXiXw/exec"
-
-    private var pingMediaPlayer: MediaPlayer? = null
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbzNtHxIhZKUiTtDyj6ppx7YK5kUCiIsVpbM-TISNKN_sSFl0SHSjHmmReR5Uj7mCGP_8w/exec"
     private var audioManager: AudioManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,28 +79,28 @@ class HomeLogin : AppCompatActivity() {
                 val reader = connection.getInputStream().bufferedReader()
                 val response = reader.use { it.readText() }
 
-                val tokenUrlMap = mutableMapOf<String, String>() // Map untuk menyimpan pasangan token -> URL
+                val tokenDataMap = mutableMapOf<String, Pair<String, String>>() // Map untuk menyimpan pasangan token -> (URL, ExitToken)
                 val jsonArray = JSONArray(response)
 
-                // Iterasi melalui JSONArray dan mengisi map tokenUrlMap
+                // Iterasi melalui JSONArray dan mengisi map tokenDataMap
                 for (i in 0 until jsonArray.length()) {
                     val jsonObject: JSONObject = jsonArray.getJSONObject(i)
                     val token = jsonObject.getString("token")
-                    // Jika URL kosong di sheet, ini akan menjadi string kosong, bukan null
-                    val urlLink = jsonObject.optString("url", "") // Menggunakan optString dengan default ""
-                    tokenUrlMap[token] = urlLink
+                    val urlLink = jsonObject.optString("url", "")
+                    val exitToken = jsonObject.optString("exit_token", "") // <--- Perubahan di sini: Ambil exit_token
+                    tokenDataMap[token] = Pair(urlLink, exitToken) // Simpan URL dan ExitToken
                 }
 
                 launch(Dispatchers.Main) {
-                    if (tokenUrlMap.containsKey(enteredToken)) {
-                        val examUrl = tokenUrlMap[enteredToken] // Ini bisa berupa string kosong jika tidak ada URL
+                    if (tokenDataMap.containsKey(enteredToken)) {
+                        val (examUrl, exitToken) = tokenDataMap[enteredToken]!! // Dapatkan URL dan ExitToken
                         Toast.makeText(this@HomeLogin, "Login Berhasil! Memuat ujian...", Toast.LENGTH_SHORT).show()
 
                         val intent = Intent(this@HomeLogin, MainActivity::class.java)
-                        // Mengirim URL (bisa kosong) ke MainActivity
                         intent.putExtra("EXAM_URL", examUrl)
+                        intent.putExtra("EXIT_TOKEN", exitToken) // <--- Perubahan di sini: Kirim exit_token ke MainActivity
                         startActivity(intent)
-                        // finish() // KOMENTARI BARIS INI UNTUK DEBUGGING
+                        // finish()
                     } else {
                         Toast.makeText(this@HomeLogin, "Token tidak valid", Toast.LENGTH_SHORT).show()
                         playPingSound()

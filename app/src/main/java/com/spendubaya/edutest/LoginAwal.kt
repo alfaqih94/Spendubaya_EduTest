@@ -35,7 +35,7 @@ class LoginAwal : AppCompatActivity() {
 
     private val requestBluetoothPermission = 1
     // URL API Google Sheet untuk pengecekan nilai update dan link download
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbxBU_xxoZhmx7BthuFQigHVLgaVKrgsyz6YClrwDYYY9Q1VlQSZFLQQWqsHJaVqkxhQOg/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbyDcOKLzCDfGa_BQuLOylFCCZllXVc1z26IHpAx5Vj7yQUO5wdi7qSaiijDyBKqrQvR1A/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
     private var pingMediaPlayer: MediaPlayer? = null
     private var audioManager: AudioManager? = null
 

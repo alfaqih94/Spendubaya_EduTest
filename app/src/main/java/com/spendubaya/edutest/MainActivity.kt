@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
     // Variabel untuk menyimpan URL dinamis yang diterima dari HomeLogin
     private var dynamicExamURL: String? = null
+    private var dynamicExitToken: String? = null // <--- Perubahan di sini: Variabel baru untuk token keluar
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
@@ -86,10 +87,16 @@ class MainActivity : AppCompatActivity() {
 
         // Dapatkan URL dinamis dari Intent
         dynamicExamURL = intent.getStringExtra("EXAM_URL")
+        dynamicExitToken = intent.getStringExtra("EXIT_TOKEN") // <--- Perubahan di sini: Ambil token keluar
         if (dynamicExamURL != null) {
             Log.i("MainActivity", "Menerima URL dinamis: $dynamicExamURL")
         } else {
             Log.w("MainActivity", "Tidak ada URL dinamis yang diterima. WebView mungkin kosong.")
+        }
+        if (dynamicExitToken != null) {
+            Log.i("MainActivity", "Menerima Exit Token dinamis: $dynamicExitToken") // Log token keluar
+        } else {
+            Log.w("MainActivity", "Tidak ada Exit Token dinamis yang diterima.")
         }
 
         // Dapatkan root view dari aktivitas untuk menambahkan view dinamis di atas
@@ -239,10 +246,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Menghasilkan kode keluar dinamis berdasarkan tanggal saat ini
-    private fun getExitCode(): String {
-        val dateFormat = SimpleDateFormat("ddMMyy", Locale.getDefault())
-        return dateFormat.format(Date())
-    }
+
 
     // Menampilkan dialog untuk keluar dari Kiosk Mode, memerlukan kode
     private fun showExitDialog() {
@@ -259,12 +263,12 @@ class MainActivity : AppCompatActivity() {
 
         // Membuat TextView untuk Pesan Kustom
         val customMessageView = TextView(this).apply {
-            text = "Masukkan kode (DDMMYY) untuk keluar"
-            setTextColor(Color.BLACK) // Warna pesan
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f) // Ukuran teks pesan
-            setTypeface(customFont2, Typeface.ITALIC) // Font dan gaya untuk pesan
-            gravity = Gravity.CENTER_HORIZONTAL // Tengahkan pesan
-            setPadding(0, dpToPx(0f), 0, dpToPx(8f)) // Padding
+            text = "Masukkan kode untuk keluar" // <--- BARIS BERUBAH: Pesan lebih umum
+            setTextColor(Color.BLACK)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 20f)
+            setTypeface(customFont2, Typeface.ITALIC)
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(0, dpToPx(0f), 0, dpToPx(8f))
         }
 
         val input = EditText(this).apply {
@@ -294,14 +298,16 @@ class MainActivity : AppCompatActivity() {
         // Buat AlertDialog
 
         val dialog = AlertDialog.Builder(this)
-            .setView(layout) // Atur tampilan kustom untuk dialog
+            .setView(layout)
             .setPositiveButton("KELUAR") { _, _ ->
-                if (input.text.toString() == getExitCode()) {
-                    playAttentionSound() // Putar suara saat percobaan keluar berhasil
-                    stopLockTask() // Keluar dari mode Lock Task
-                    finishAffinity() // Selesaikan semua aktivitas dalam tugas
+                // <--- BARIS BERUBAH: Gunakan dynamicExitToken untuk verifikasi
+                if (input.text.toString() == dynamicExitToken && !dynamicExitToken.isNullOrEmpty()) {
+                    playAttentionSound()
+                    stopLockTask()
+                    finishAffinity()
                 } else {
-                    Toast.makeText(this, "Kode salah!", Toast.LENGTH_SHORT).show() // Tampilkan toast kesalahan
+                    Toast.makeText(this, "Kode salah!", Toast.LENGTH_SHORT).show()
+                    playAttentionSound() // <--- BARIS BARU: Putar suara jika kode salah
                 }
             }
             // Tambahkan tombol negatif untuk menutup dialog
