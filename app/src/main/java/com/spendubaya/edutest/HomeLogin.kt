@@ -28,7 +28,7 @@ class HomeLogin : AppCompatActivity() {
     // Ganti dengan URL Web App Apps Script Anda
     // Asumsi: Apps Script ini akan mengembalikan JSON Array of Objects,
     // di mana setiap objek memiliki "token" dan "url".
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbzNtHxIhZKUiTtDyj6ppx7YK5kUCiIsVpbM-TISNKN_sSFl0SHSjHmmReR5Uj7mCGP_8w/exec"
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbyZCQmPvB5gU-iphATVl3Cy7_8636jYM6KZQRnohn3y_ZdeNhVeeTSispzIzpbBUwL_cA/exec"
     private var audioManager: AudioManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +68,6 @@ class HomeLogin : AppCompatActivity() {
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun verifyToken(enteredToken: String) {
-        // Tampilkan loading atau disable tombol jika perlu
         loginButton.isEnabled = false
         Toast.makeText(this, "Memverifikasi token...", Toast.LENGTH_SHORT).show()
 
@@ -79,44 +78,52 @@ class HomeLogin : AppCompatActivity() {
                 val reader = connection.getInputStream().bufferedReader()
                 val response = reader.use { it.readText() }
 
-                val tokenDataMap = mutableMapOf<String, Pair<String, String>>() // Map untuk menyimpan pasangan token -> (URL, ExitToken)
+                // Map untuk menyimpan pasangan token -> (URL, ExitToken, DurationMinutes)
+                val tokenDataMap = mutableMapOf<String, Triple<String, String, Int>>() // <--- BARIS BERUBAH: Menambahkan Int untuk Durasi
+
                 val jsonArray = JSONArray(response)
 
-                // Iterasi melalui JSONArray dan mengisi map tokenDataMap
                 for (i in 0 until jsonArray.length()) {
                     val jsonObject: JSONObject = jsonArray.getJSONObject(i)
                     val token = jsonObject.getString("token")
                     val urlLink = jsonObject.optString("url", "")
-                    val exitToken = jsonObject.optString("exit_token", "") // <--- Perubahan di sini: Ambil exit_token
-                    tokenDataMap[token] = Pair(urlLink, exitToken) // Simpan URL dan ExitToken
+                    val exitToken = jsonObject.optString("exit_token", "")
+                    // <--- BARIS BARU: Ambil duration_minutes
+                    val durationMinutes = jsonObject.optInt("duration_minutes", 0) // Default 0 jika tidak ada atau bukan angka
+
+                    // <--- BARIS BERUBAH: Simpan URL, ExitToken, dan DurationMinutes
+                    tokenDataMap[token] = Triple(urlLink, exitToken, durationMinutes)
                 }
 
                 launch(Dispatchers.Main) {
                     if (tokenDataMap.containsKey(enteredToken)) {
-                        val (examUrl, exitToken) = tokenDataMap[enteredToken]!! // Dapatkan URL dan ExitToken
+                        // <--- BARIS BERUBAH: Dapatkan URL, ExitToken, dan DurationMinutes
+                        val (examUrl, exitToken, durationMinutes) = tokenDataMap[enteredToken]!!
                         Toast.makeText(this@HomeLogin, "Login Berhasil! Memuat ujian...", Toast.LENGTH_SHORT).show()
 
                         val intent = Intent(this@HomeLogin, MainActivity::class.java)
                         intent.putExtra("EXAM_URL", examUrl)
-                        intent.putExtra("EXIT_TOKEN", exitToken) // <--- Perubahan di sini: Kirim exit_token ke MainActivity
+                        intent.putExtra("EXIT_TOKEN", exitToken)
+                        intent.putExtra("EXAM_DURATION_MINUTES", durationMinutes) // <--- BARIS BARU: Kirim durasi ke MainActivity
                         startActivity(intent)
                         // finish()
                     } else {
                         Toast.makeText(this@HomeLogin, "Token tidak valid", Toast.LENGTH_SHORT).show()
                         playPingSound()
                     }
-                    loginButton.isEnabled = true // Aktifkan kembali tombol
+                    loginButton.isEnabled = true
                 }
             } catch (e: Exception) {
                 launch(Dispatchers.Main) {
                     playPingSound()
                     Toast.makeText(this@HomeLogin, "Error saat memverifikasi token: ${e.message}", Toast.LENGTH_LONG).show()
                     e.printStackTrace()
-                    loginButton.isEnabled = true // Aktifkan kembali tombol
+                    loginButton.isEnabled = true
                 }
             }
         }
     }
+
     /**
      * Memutar suara 'ping'
      */

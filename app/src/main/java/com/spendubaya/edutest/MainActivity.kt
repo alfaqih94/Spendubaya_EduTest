@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
+import android.os.CountDownTimer
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -52,6 +53,9 @@ class MainActivity : AppCompatActivity() {
     // Variabel untuk menyimpan URL dinamis yang diterima dari HomeLogin
     private var dynamicExamURL: String? = null
     private var dynamicExitToken: String? = null // <--- Perubahan di sini: Variabel baru untuk token keluar
+    private var examDurationMinutes: Int = 0 // <--- BARIS BARU: Variabel untuk durasi ujian (menit)
+    private lateinit var countdownTimerText: TextView // <--- BARIS BARU: TextView untuk hitung mundur
+    private var countdownTimer: CountDownTimer? = null // <--- BARIS BARU: Objek timer
 
     private lateinit var devicePolicyManager: DevicePolicyManager
     private lateinit var adminComponentName: ComponentName
@@ -88,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         // Dapatkan URL dinamis dari Intent
         dynamicExamURL = intent.getStringExtra("EXAM_URL")
         dynamicExitToken = intent.getStringExtra("EXIT_TOKEN") // <--- Perubahan di sini: Ambil token keluar
+        examDurationMinutes = intent.getIntExtra("EXAM_DURATION_MINUTES", 0) // <--- BARIS BARU: Ambil durasi ujian dari Intent
         if (dynamicExamURL != null) {
             Log.i("MainActivity", "Menerima URL dinamis: $dynamicExamURL")
         } else {
@@ -98,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             Log.w("MainActivity", "Tidak ada Exit Token dinamis yang diterima.")
         }
+        Log.i("MainActivity", "Menerima Durasi Ujian: $examDurationMinutes menit")
 
         // Dapatkan root view dari aktivitas untuk menambahkan view dinamis di atas
         val rootView = findViewById<FrameLayout>(android.R.id.content)
@@ -174,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         // --- Akhir Perubahan Tata Letak untuk Pemusatan ---
 
         // Panggil fungsi untuk menambahkan tampilan baterai dan waktu ke statusContainer
-        addBatteryAndTimeDisplay()
+        addBatteryTimeAndCountdownDisplay()
 
         // --- Inisialisasi Layout Error dari XML ---
         // Inflate the error_urlload.xml layout
@@ -215,6 +221,12 @@ class MainActivity : AppCompatActivity() {
 
         // Periksa dan aktifkan Kiosk Mode
         checkKioskModeStatus()
+        if (examDurationMinutes > 0) {
+            startCountdownTimer(examDurationMinutes)
+        } else {
+            countdownTimerText.text = "00:00:00" // Tampilkan 0 jika tidak ada durasi
+            Log.w("MainActivity", "Durasi ujian 0 atau tidak valid, timer tidak dimulai.")
+        }
     }
 
     override fun onResume() {
@@ -424,6 +436,8 @@ class MainActivity : AppCompatActivity() {
         attentionMediaPlayer = null
         exitMediaPlayer?.release()
         exitMediaPlayer = null
+        countdownTimer?.cancel() // <--- BARIS BARU: Pastikan timer dibatalkan saat aktivitas dihancurkan
+        Log.d("MainActivity", "onDestroy: Countdown timer cancelled and media players released.")
     }
 
     // Fungsi utilitas untuk mengonversi DP ke Piksel
@@ -440,63 +454,141 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Menambahkan status baterai dan tampilan waktu ke statusContainer
-    private fun addBatteryAndTimeDisplay() {
+    // <--- FUNGSI BERUBAH TOTAL: Ganti nama fungsi dan tambahkan elemen timer
+    private fun addBatteryTimeAndCountdownDisplay() {
         // Tata letak untuk ikon dan teks baterai
         val batteryLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL // Tengahkan item secara vertikal di dalam tata letak ini
+            gravity = Gravity.CENTER_VERTICAL
             setPadding(0, 0, dpToPx(8f), 0) // Padding di kanan untuk jarak dari waktu
         }
 
         val batteryIcon = ImageView(this).apply {
             setImageResource(R.drawable.ikon_baterai)
-            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply { // Ukuran ikon
-                setMargins(0, 0, dpToPx(4f), 0) // Margin kanan untuk ikon
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply {
+                setMargins(0, 0, dpToPx(4f), 0)
             }
         }
         batteryStatus = TextView(this).apply {
             setTextColor(Color.DKGRAY)
-            textSize = 16f // Ukuran teks untuk status baterai
+            textSize = 16f
         }
 
         batteryLayout.addView(batteryIcon)
         batteryLayout.addView(batteryStatus)
 
-        // Tata letak untuk ikon dan teks waktu, dengan penyesuaian vertikal
+        // Tata letak untuk ikon dan teks waktu
         val timeLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL // Tengahkan item secara vertikal di dalam tata letak ini
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, dpToPx(8f), 0) // Padding di kanan untuk jarak dari timer
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                // Tambahkan margin atas kecil untuk mendorong waktu sedikit ke bawah sesuai permintaan
                 setMargins(0, dpToPx(2f), 0, 0)
             }
         }
 
         val timeIcon = ImageView(this).apply {
             setImageResource(R.drawable.ikon_jam)
-            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply { // Ukuran ikon
-                setMargins(0, 0, dpToPx(4f), 0) // Margin kanan untuk ikon
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply {
+                setMargins(0, 0, dpToPx(4f), 0)
             }
         }
         timeStatus = TextView(this).apply {
             setTextColor(Color.DKGRAY)
-            textSize = 16f // Ukuran teks untuk status waktu
+            textSize = 16f
         }
 
         timeLayout.addView(timeIcon)
         timeLayout.addView(timeStatus)
 
-        // Tambahkan tata letak baterai dan waktu ke statusContainer utama
+        // <--- BARIS BARU: Tata letak untuk ikon dan teks hitung mundur
+        val countdownLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, dpToPx(8f), 0) // Padding di kanan untuk jarak antar elemen
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, dpToPx(2f), 0, 0)
+            }
+        }
+
+        val timerIcon = ImageView(this).apply {
+            setImageResource(R.drawable.ikon_timer) // <--- BARIS BARU: Asumsi ada ikon_timer.png/xml di res/drawable
+            setColorFilter(ContextCompat.getColor(this@MainActivity, android.R.color.holo_red_dark), android.graphics.PorterDuff.Mode.SRC_IN)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24f), dpToPx(24f)).apply {
+                setMargins(0, 0, dpToPx(4f), 0)
+            }
+        }
+        countdownTimerText = TextView(this).apply {
+            setTextColor(Color.RED) // Warna merah untuk timer
+            textSize = 16f
+            setTypeface(null, Typeface.BOLD) // Tebal
+        }
+
+        countdownLayout.addView(timerIcon)
+        countdownLayout.addView(countdownTimerText)
+
+
+        // Tambahkan tata letak baterai, waktu, dan hitung mundur ke statusContainer utama
         statusContainer.addView(batteryLayout)
         statusContainer.addView(timeLayout)
+        statusContainer.addView(countdownLayout) // <--- BARIS BARU: Tambahkan layout hitung mundur
 
         updateBatteryAndTime() // Pembaruan awal baterai dan waktu
     }
 
     // Memperbarui persentase baterai dan waktu saat ini secara berkala
+    // <--- FUNGSI BARU: Fungsi untuk memulai timer hitung mundur
+    private fun startCountdownTimer(minutes: Int) {
+        val totalMillis = minutes * 60 * 1000L // Konversi menit ke milidetik
+
+        countdownTimer?.cancel() // Batalkan timer sebelumnya jika ada
+
+        countdownTimer = object : CountDownTimer(totalMillis, 1000) { // Interval setiap 1 detik
+            private var warningSoundPlayed = false // <--- BARIS BARU: Flag untuk memastikan suara peringatan hanya diputar sekali
+            private var finalWarningSoundPlayed = false // <--- BARIS BARU: Flag untuk peringatan terakhir (misal 1 menit)
+
+            override fun onTick(millisUntilFinished: Long) {
+                val hours = (millisUntilFinished / (1000 * 60 * 60)) % 24
+                val minutesRemaining = (millisUntilFinished / (1000 * 60)) % 60 // <--- BARIS BERUBAH: Ganti nama variabel
+                val secondsRemaining = (millisUntilFinished / 1000) % 60 // <--- BARIS BERUBAH: Ganti nama variabel
+
+                // Format HH:MM:SS
+                val timeFormatted = String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutesRemaining, secondsRemaining)
+                countdownTimerText.text = timeFormatted
+
+                // Logic untuk peringatan suara
+                if (minutesRemaining <= 5 && !warningSoundPlayed && millisUntilFinished > 0) { // <--- BARIS BERUBAH: Peringatan 5 menit
+                    countdownTimerText.setTextColor(Color.RED)
+                    playAttentionSound()
+                    warningSoundPlayed = true // <--- BARIS BARU: Set flag agar tidak berbunyi lagi
+                }
+
+                // Opsional: Peringatan lebih lanjut jika tersisa 1 menit
+                if (minutesRemaining <= 1 && !finalWarningSoundPlayed && millisUntilFinished > 0) { // <--- BARIS BARU: Peringatan 1 menit
+                    playAttentionSound() // Bunyikan lagi untuk peringatan 1 menit
+                    finalWarningSoundPlayed = true // <--- BARIS BARU: Set flag
+                }
+            }
+
+            override fun onFinish() {
+                countdownTimerText.text = "00:00:00"
+                Toast.makeText(this@MainActivity, "Waktu ujian habis! Aplikasi keluar otomatis.", Toast.LENGTH_LONG).show()
+                playAttentionSound() // Putar suara saat waktu habis
+                Handler(Looper.getMainLooper()).postDelayed({
+                    stopLockTask()
+                    finishAffinity() // Keluar dari aplikasi
+                }, 1500) // Beri sedikit waktu untuk Toast dan suara
+            }
+        }.start()
+        Log.d("MainActivity", "Countdown timer started for $minutes minutes.")
+    }
+
     private fun updateBatteryAndTime() {
         // Dapatkan tingkat baterai
         val batteryIntent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
