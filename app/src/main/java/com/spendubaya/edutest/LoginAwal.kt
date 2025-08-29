@@ -10,7 +10,6 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import androidx.appcompat.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -21,21 +20,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.net.HttpURLConnection
-import kotlinx.coroutines.withContext
-import java.net.URL
-import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import androidx.core.net.toUri // Import untuk extension function toUri()
 
 class LoginAwal : AppCompatActivity() {
 
     private val requestBluetoothPermission = 1
-    // URL API Google Sheet untuk pengecekan nilai update dan link download
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbyDcOKLzCDfGa_BQuLOylFCCZllXVc1z26IHpAx5Vj7yQUO5wdi7qSaiijDyBKqrQvR1A/exec" // Pastikan ini URL yang mengembalikan nilai dan download_link
     private var pingMediaPlayer: MediaPlayer? = null
     private var audioManager: AudioManager? = null
 
@@ -105,17 +94,6 @@ class LoginAwal : AppCompatActivity() {
     }
 
     private suspend fun performChecks() {
-        // Cek pembaruan aplikasi terlebih dahulu dan dapatkan link download
-        val (updateNeeded, downloadLink) = withContext(Dispatchers.IO) {
-            checkAppUpdate() // Panggil fungsi yang sekarang mengembalikan Pair
-        }
-
-        if (updateNeeded) {
-            playPingSound()
-            // Tampilkan dialog pembaruan dengan link yang didapat dari API
-            showUpdateDialog(downloadLink)
-            return
-        }
 
         // Jika tidak ada pembaruan, lanjutkan dengan pemeriksaan lainnya
         if (!isNetworkConnected()) {
@@ -139,65 +117,8 @@ class LoginAwal : AppCompatActivity() {
         finish()
     }
 
-    /**
-     * Fungsi untuk memeriksa status pembaruan aplikasi dan mendapatkan link download dari API Google Sheet.
-     * Mengembalikan Pair<Boolean, String?>:
-     * - Boolean: true jika pembaruan diperlukan (nilai = 1), false jika tidak.
-     * - String?: Link download, null jika tidak ada update atau terjadi error.
-     */
-    private suspend fun checkAppUpdate(): Pair<Boolean, String?> {
-        var connection: HttpURLConnection? = null
-        var reader: BufferedReader? = null
-        return try {
-            val url = URL(googleSheetAPI)
-            connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connect()
 
-            val stream = connection.inputStream
-            reader = BufferedReader(InputStreamReader(stream))
-            val buffer = StringBuffer()
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                buffer.append(line + "\n")
-            }
 
-            val jsonResponse = buffer.toString()
-            val jsonObject = JSONObject(jsonResponse)
-            val nilai = jsonObject.getInt("nilai")
-            // Ambil link download dari JSON, defaultnya null jika tidak ada atau error
-            val downloadLink = jsonObject.optString("download_link", null)
-
-            when (nilai) {
-                0 -> Pair(false, null) // Tidak ada pembaruan
-                1 -> Pair(true, downloadLink) // Ada pembaruan, sertakan link
-                else -> {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@LoginAwal, "Respons API tidak valid", Toast.LENGTH_SHORT).show()
-                    }
-                    Pair(false, null) // Anggap tidak ada pembaruan jika respons tidak sesuai
-                }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(this@LoginAwal, "Error koneksi ke server: ${e.message}", Toast.LENGTH_LONG).show()
-                e.printStackTrace()
-            }
-            Pair(false, null) // Anggap tidak ada pembaruan jika terjadi error
-        } finally {
-            connection?.disconnect()
-            try {
-                reader?.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    /**
-     * Menampilkan dialog untuk memberitahu pengguna bahwa pembaruan tersedia.
-     * Menerima link download sebagai parameter.
-     */
     override fun onDestroy() {
         super.onDestroy()
         // Melepaskan MediaPlayer saat aktivitas dihancurkan
@@ -206,25 +127,6 @@ class LoginAwal : AppCompatActivity() {
         Log.d("LoginAwal", "onDestroy: Ping media player released.")
     }
 
-    private fun showUpdateDialog(downloadLink: String?) {
-        // Menggunakan konstruktor AlertDialog.Builder(context, themeResId)
-        // R.style.AlertDialogCustomTheme adalah gaya yang Anda definisikan di themes.xml
-        AlertDialog.Builder(this, R.style.AlertDialogCustomTheme)
-            .setTitle("Pembaruan Aplikasi Tersedia")
-            .setMessage("Versi terbaru aplikasi tersedia. Harap perbarui untuk melanjutkan.")
-            .setPositiveButton("OK") { dialog, _ ->
-                if (!downloadLink.isNullOrEmpty()) {
-                    val browserIntent = Intent(Intent.ACTION_VIEW, downloadLink.toUri())
-                    startActivity(browserIntent)
-                } else {
-                    Toast.makeText(this, "Link download tidak tersedia. Harap hubungi admin.", Toast.LENGTH_LONG).show()
-                }
-                dialog.dismiss()
-                finish()
-            }
-            .setCancelable(false)
-            .show()
-    }
 
     private fun isFloatingAppRunning(): Boolean {
         val manager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
