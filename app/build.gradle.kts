@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.spendubaya.edutest"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.spendubaya.edutest"
         minSdk = 21
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.10 - STABLE"
+        versionCode = 11
+        versionName = "1.10.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

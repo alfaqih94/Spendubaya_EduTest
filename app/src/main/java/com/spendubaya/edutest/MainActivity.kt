@@ -289,7 +289,7 @@ class MainActivity : AppCompatActivity() {
             textSize = 30f
             setHintTextColor(Color.BLACK)
             // Gunakan TYPE_CLASS_NUMBER dan TYPE_NUMBER_VARIATION_PASSWORD untuk menyamarkan input
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            inputType = InputType.TYPE_CLASS_NUMBER
             setTypeface(customFont2, Typeface.BOLD)
             setPadding(50, 40, 50, 40) // Padding internal
             setBackgroundResource(android.R.drawable.editbox_background) // Latar belakang kotak edit standar
