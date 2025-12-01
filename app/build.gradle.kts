@@ -11,8 +11,8 @@ android {
         applicationId = "com.spendubaya.edutest"
         minSdk = 21
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.10.1"
+        versionCode = 14
+        versionName = "1.10.10.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
