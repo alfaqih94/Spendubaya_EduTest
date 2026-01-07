@@ -28,7 +28,7 @@ class HomeLogin : AppCompatActivity() {
     // Ganti dengan URL Web App Apps Script Anda
     // Asumsi: Apps Script ini akan mengembalikan JSON Array of Objects,
     // di mana setiap objek memiliki "token" dan "url".
-    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbyZCQmPvB5gU-iphATVl3Cy7_8636jYM6KZQRnohn3y_ZdeNhVeeTSispzIzpbBUwL_cA/exec"
+    private val googleSheetAPI = "https://script.google.com/macros/s/AKfycbyCgOo4c6MAgQyK-aQn_zXngpdO7gtVWBAL1L-8ge5eh9CV3XK-rAG70zjMklZWZmB4/exec?type=json"
     private var audioManager: AudioManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,11 +85,11 @@ class HomeLogin : AppCompatActivity() {
 
                 for (i in 0 until jsonArray.length()) {
                     val jsonObject: JSONObject = jsonArray.getJSONObject(i)
-                    val token = jsonObject.getString("token")
+                    val token = jsonObject.getString("token_masuk")
                     val urlLink = jsonObject.optString("url", "")
-                    val exitToken = jsonObject.optString("exit_token", "")
+                    val exitToken = jsonObject.optString("token_keluar", "")
                     // <--- BARIS BARU: Ambil duration_minutes
-                    val durationMinutes = jsonObject.optInt("duration_minutes", 0) // Default 0 jika tidak ada atau bukan angka
+                    val durationMinutes = jsonObject.optInt("waktu", 0) // Default 0 jika tidak ada atau bukan angka
 
                     // <--- BARIS BERUBAH: Simpan URL, ExitToken, dan DurationMinutes
                     tokenDataMap[token] = Triple(urlLink, exitToken, durationMinutes)
