@@ -22,7 +22,7 @@ class SoundManager(private val context: Context) {
     private fun initializePlayers() {
         try {
             // Inisialisasi suara alarm/attention
-            attentionMediaPlayer = MediaPlayer.create(context, R.raw.alarm)
+            attentionMediaPlayer = MediaPlayer.create(context, R.raw.retro)
             // Tambahkan suara lain jika perlu
         } catch (e: Exception) {
             e.printStackTrace()
